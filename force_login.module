@@ -1,0 +1,152 @@
+<?php
+
+/**
+ * @file
+ * Force login for all pages except some. Keeps metatag intact.
+ */
+
+include_once dirname(__FILE__) . '/force_login.inc.php';
+
+/**
+ * Implements hook_menu().
+ */
+function force_login_menu() {
+  $items['admin/config/system/force_login'] = array(
+    'title' => 'Force Login admin settings',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('force_login_admin_settings'),
+    'access arguments' => array('administer content'),
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_theme().
+ */
+function force_login_theme() {
+  $theme = array(
+    'force_login_replacement' => array(
+      'template' => 'force-login-replacement',
+      'variables' => array(
+        'login_form' => NULL,
+      ),
+    ),
+  );
+
+  return $theme;
+}
+
+/**
+ * Settings form.
+ */
+function force_login_admin_settings() {
+  $form = array();
+
+  $form['force_login_exceptions'] = array(
+    '#type' => 'textarea',
+    '#rows' => 10,
+    '#title' => t('Page urls which will shown also for anonymous users'),
+    '#default_value' => variable_get('force_login_exceptions', ''),
+    '#description' => t("A list of urls which are visible for anonymous users, e.g. <pre>user/*</pre>."),
+    '#required' => TRUE,
+  );
+
+  return system_settings_form($form);
+}
+
+/**
+ * Check access, return true if the page may be visited by anon users.
+ */
+function _force_login_check_access_impl() {
+  // Allow logged-in users.
+  if (user_is_logged_in()) {
+    return TRUE;
+  }
+
+  // Check for exceptions.
+  $pages = "user/*\n" . variable_get('force_login_exceptions', '');
+
+  $path = drupal_strtolower(drupal_get_path_alias($_GET['q']));
+  $page_match = drupal_match_path($path, $pages);
+  if ($path != $_GET['q']) {
+    $page_match = $page_match || drupal_match_path($_GET['q'], $pages);
+  }
+  if ($page_match) {
+    return TRUE;
+  }
+  $router_item = menu_get_item();
+  if (empty($router_item)) {
+    // Allow 404.
+    return TRUE;
+  }
+  if (empty($router_item['access'])) {
+    // Show login for access denied.
+    return FALSE;
+  }
+
+  $node = menu_get_object('node');
+  if (!$node) {
+    $nid = arg(0) == 'node' ? arg(1) : FALSE;
+    if ($nid) {
+      $node = node_load($nid);
+    }
+  }
+
+  // Check for boolean field on node.
+  if ($node) {
+    if (!empty($node->{FORCE_LOGIN_FIELD_NAME}[LANGUAGE_NONE][0]['value'])) {
+      return TRUE;
+    }
+  }
+
+  return FALSE;
+}
+
+/**
+ * Check access.
+ *
+ * Cached version of _force_login_check_access_impl().
+ */
+function force_login_check_access() {
+  static $has_access = NULL;
+  if (isset($has_access)) {
+    return $has_access;
+  }
+  $has_access = _force_login_check_access_impl();
+  return $has_access;
+}
+
+/**
+ * Implements hook_page_build().
+ */
+function force_login_page_build(&$page) {
+  $main_content_display = &drupal_static('system_main_content_added', FALSE);
+
+  // We do the access check on page build so metatags and
+  // stuff is already populated.
+  if (force_login_check_access()) {
+    return;
+  }
+
+  $replacement = NULL;
+
+  if (module_exists('page_manager')) {
+    $tasks = page_manager_get_tasks_by_type('page');
+    $subtasks = page_manager_get_task_subtasks($tasks['page']);
+    if (isset($subtasks[FORCE_LOGIN_PAGE_MANAGER_NAME])) {
+      $replacement = [
+        '#markup' => page_manager_page_execute(FORCE_LOGIN_PAGE_MANAGER_NAME),
+      ];
+    }
+  }
+  if (!$replacement) {
+    $replacement = array(
+      '#theme' => 'force_login_replacement',
+      '#login_form' => drupal_get_form("user_login"),
+    );
+  }
+  // If the access-check fails, replace the main-content with a template.
+  $page['content']['system_main'] = $replacement;
+  $main_content_display = TRUE;
+}

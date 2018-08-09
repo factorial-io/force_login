@@ -1,0 +1,74 @@
+<?php
+
+/**
+ * @file
+ * Install hooks for the module, will create the fields for all nodes.
+ */
+
+include_once dirname(__FILE__) . '/force_login.inc.php';
+
+/**
+ * Create field_base if not already existing.
+ */
+function _force_login_create_field_base() {
+  if (!field_info_field(FORCE_LOGIN_FIELD_NAME)) {
+
+    // Create the field base.
+    $field = array(
+      'field_name' => FORCE_LOGIN_FIELD_NAME,
+      'type' => 'list_boolean',
+      'module' => 'list',
+      'settings' => array(
+        'allowed_values' => array(
+          0 => '',
+          1 => '',
+        ),
+        'allowed_values_function' => '',
+      ),
+      'translatable' => 0,
+    );
+    field_create_field($field);
+  }
+}
+
+/**
+ * Create field instance if not existing.
+ */
+function _force_login_create_field_instance($bundle) {
+  if (field_info_instance('node', FORCE_LOGIN_FIELD_NAME, $bundle)) {
+    return;
+  }
+
+  $instance = array(
+    'field_name' => FORCE_LOGIN_FIELD_NAME,
+    'entity_type' => 'node',
+    'label' => 'Show content for anonymous user',
+    'bundle' => $bundle,
+    'required' => FALSE,
+    'settings' => array(
+      'user_register_form' => 1,
+    ),
+    'widget' => array(
+      'active' => 1,
+      'module' => 'options',
+      'settings' => array(
+        'display_label' => 1,
+      ),
+      'type' => 'options_onoff',
+      'weight' => 42,
+    ),
+  );
+  field_create_instance($instance);
+}
+
+/**
+ * Implements hook_enable().
+ */
+function force_login_enable() {
+  _force_login_create_field_base();
+  $node_bundles = field_info_bundles('node');
+  array_map(function ($node_bundle) {
+    _force_login_create_field_instance($node_bundle);
+  }, array_keys($node_bundles));
+
+}

@@ -1,0 +1,5 @@
+name = force login
+description = Force login for all pages expect some exceptions
+core = 7.x
+package = custom
+
