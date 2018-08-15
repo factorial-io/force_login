@@ -1,0 +1,6 @@
+{
+  "name": "factorial-io/force_login",
+  "description": "Force the user to login into site without losing SEO data",
+  "type": "drupal-module",
+  "license": "MIT"
+}
