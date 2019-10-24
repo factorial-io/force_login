@@ -66,7 +66,8 @@ function _force_login_check_access_impl() {
 
   // Check for exceptions.
   $pages = "user/*\n" . variable_get('force_login_exceptions', '');
-
+  // Allow pages list override in custom modules.
+  drupal_alter('force_login_pages', $pages);
   $path = drupal_strtolower(drupal_get_path_alias($_GET['q']));
   $page_match = drupal_match_path($path, $pages);
   if ($path != $_GET['q']) {
