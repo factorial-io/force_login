@@ -6,7 +6,7 @@ This module will keep the headers of a page intact and replaces the content with
 
 The module will add a checkbox-field to all existing content types when installed. If the editor checks this checkbox, it will be shown also for anonymous users.
 
-There's also a Drupal-variable called `force_login_exceptions` where a list of regexes can be added for pages which should ne be protected. This has also a proper admin-page.
+There's also a Drupal-variable called `force_login_exceptions` where a list of regexes can be added for pages which should ne be protected. This has also a proper admin-page. You can also alter the page list to make module reacting to a custom display logic without storing a defined list in settings.
 
 
 
