@@ -16,6 +16,8 @@ function force_login_menu() {
     'page callback' => 'drupal_get_form',
     'page arguments' => array('force_login_admin_settings'),
     'access arguments' => array('administer content'),
+    'file' => 'force_login.admin.inc',
+    'type' => MENU_NORMAL_ITEM,
   );
 
   return $items;
@@ -35,24 +37,6 @@ function force_login_theme() {
   );
 
   return $theme;
-}
-
-/**
- * Settings form.
- */
-function force_login_admin_settings() {
-  $form = array();
-
-  $form['force_login_exceptions'] = array(
-    '#type' => 'textarea',
-    '#rows' => 10,
-    '#title' => t('Page urls which will shown also for anonymous users'),
-    '#default_value' => variable_get('force_login_exceptions', ''),
-    '#description' => t("A list of urls which are visible for anonymous users, e.g. <pre>user/*</pre>."),
-    '#required' => TRUE,
-  );
-
-  return system_settings_form($form);
 }
 
 /**
@@ -94,8 +78,14 @@ function _force_login_check_access_impl() {
     }
   }
 
-  // Check for boolean field on node.
   if ($node) {
+    // Allow accessing to the whole list of nodes for listed content types.
+    $node_types = variable_get('force_login_node_type_exceptions', '');
+    drupal_alter('force_login_node_type_exceptions', $pages);
+    if (in_array($node->type, $node_types)) {
+      return TRUE;
+    }
+    // Check for boolean field on node.
     if (!empty($node->{FORCE_LOGIN_FIELD_NAME}[LANGUAGE_NONE][0]['value'])) {
       return TRUE;
     }
