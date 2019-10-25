@@ -29,7 +29,7 @@ function force_login_admin_settings() {
     '#type' => 'checkboxes',
     '#title' => t('Node types which nodes will be shown for anonymous users'),
     '#options' => $node_type_options,
-    '#default_value' => variable_get('force_login_node_type_exceptions', ''),
+    '#default_value' => variable_get('force_login_node_type_exceptions', []),
     '#description' => t("This setting will override per-node display for anonymous."),
   ];
 

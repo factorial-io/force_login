@@ -80,8 +80,7 @@ function _force_login_check_access_impl() {
 
   if ($node) {
     // Allow accessing to the whole list of nodes for listed content types.
-    $node_types = variable_get('force_login_node_type_exceptions', '');
-    drupal_alter('force_login_node_type_exceptions', $pages);
+    $node_types = _force_login_get_exceptional_ct();
     if (in_array($node->type, $node_types)) {
       return TRUE;
     }
@@ -140,4 +139,33 @@ function force_login_page_build(&$page) {
   // If the access-check fails, replace the main-content with a template.
   $page['content']['system_main'] = $replacement;
   $main_content_display = TRUE;
+}
+
+/**
+ * Implementing hook_form_FORM_ID_alter();
+ */
+function force_login_form_node_form_alter(&$form, $form_state) {
+  $node_type = $form['#node']->type;
+  $exceptional_ct = _force_login_get_exceptional_ct();
+  // If content type is in the list of exceptions - there is
+  // no point to display Show for anonymous checkbox on node edit.
+  if (in_array($node_type, $exceptional_ct)) {
+    if (isset($form[FORCE_LOGIN_FIELD_NAME])) {
+      $form[FORCE_LOGIN_FIELD_NAME]['#access'] = FALSE;
+    }
+  }
+}
+
+/**
+ * Helper function. Returns node types selected on admin page
+ * or altered in a custom module.
+ *
+ * @return array|null $node_types
+ *   A list of node types selected/altered.
+ */
+function _force_login_get_exceptional_ct() {
+  $node_types = variable_get('force_login_node_type_exceptions', []);
+  drupal_alter('force_login_node_type_exceptions', $node_types);
+
+  return $node_types;
 }
