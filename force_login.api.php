@@ -16,3 +16,16 @@
 function hook_force_login_pages_alter(&$pages) {
   $pages .= "\n" . 'my-example-page';
 }
+
+/**
+ *  Allows modifying the list of content types to ignore
+ *  page access restrictions from Force login.
+ *
+ * Implements hook_force_login_node_type_exceptions_alter().
+ *
+ * @param $node_types
+ *   An array of node types to exclude permissions restrictions from.
+ */
+function hook_force_login_node_type_exceptions_alter(&$node_types) {
+  $node_types = array_merge($node_types, ['my_example_node_type']);
+}
